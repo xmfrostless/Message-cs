@@ -9,27 +9,27 @@ using System.Diagnostics;
 public class MessageDispatcher {
 	private Dictionary<int, Dictionary<int, IMessageListener>> _listenerDict = new Dictionary<int, Dictionary<int, IMessageListener>>();
 	private HashSet<int> _invokePool = new HashSet<int>();
-	private LinkedList<Tuple<int, int, IMessageListener?>> _listenerCacheQueue = new LinkedList<Tuple<int, int, IMessageListener?>>();
+	private LinkedList<System.Tuple<int, int, IMessageListener?>> _listenerCacheQueue = new LinkedList<System.Tuple<int, int, IMessageListener?>>();
 
 	public void AddListener<T>(object sender, System.Action<T> func) where T : MessageBase<T> {
 		if (sender == null) {
-			Debug.Fail("MessageDispatcher.AddListener: Sender is null!");
+			Debug.Fail("[Error] MessageDispatcher.AddListener: Sender is null!");
 			return;
 		}
 		if (func == null) {
-			Debug.Fail("MessageDispatcher.AddListener: Func is null!");
+			Debug.Fail("[Error] MessageDispatcher.AddListener: Func is null!");
 			return;
 		}
 		var messageId = MessageTypeId<T>.id;
 		var senderKey = sender.GetHashCode();
 		if (_invokePool.Count > 0) {
-			_listenerCacheQueue.AddLast(new Tuple<int, int, IMessageListener?>(messageId, senderKey, new MessageListener<T>(func)));
+			_listenerCacheQueue.AddLast(new System.Tuple<int, int, IMessageListener?>(messageId, senderKey, new MessageListener<T>(func)));
 			return;
 		}
 
 		if (_listenerDict.TryGetValue(messageId, out var dict)) {
 			if (dict.ContainsKey(senderKey)) {
-				Debug.Fail("MessageDispatcher.AddListener: The sender is exist!");
+				Debug.Fail("[Error] MessageDispatcher.AddListener: The sender is exist!");
 				return;
 			}
 		} else {
@@ -41,13 +41,13 @@ public class MessageDispatcher {
 
 	public void RemoveListener<T>(object sender) where T : MessageBase<T> {
 		if (sender == null) {
-			Debug.Fail("MessageDispatcher.RemoveListener: Sender is null!");
+			Debug.Fail("[Error] MessageDispatcher.RemoveListener: Sender is null!");
 			return;
 		}
 		var messageId = MessageTypeId<T>.id;
 		var senderKey = sender.GetHashCode();
 		if (_invokePool.Count > 0) {
-			_listenerCacheQueue.AddLast(new Tuple<int, int, IMessageListener?>(messageId, senderKey, null));
+			_listenerCacheQueue.AddLast(new System.Tuple<int, int, IMessageListener?>(messageId, senderKey, null));
 			return;
 		}
 		_RemoveListener(messageId, senderKey);
@@ -55,7 +55,7 @@ public class MessageDispatcher {
 
 	public void Send(IMessage message) {
 		if (message == null) {
-			Debug.Fail("MessageDispatcher.Send: Message is null!");
+			Debug.Fail("[Error] MessageDispatcher.Send: Message is null!");
 			return;
 		}
 
@@ -65,7 +65,7 @@ public class MessageDispatcher {
 		}
 
 		if (_invokePool.Contains(messageId)) {
-			Debug.Fail("MessageDispatcher.Send: Message is recursive send! -> " + message.GetType().FullName);
+			Debug.Fail("[Error] MessageDispatcher.Send: Message is recursive send! -> " + message.GetType().FullName);
 			return;
 		}
 
@@ -91,7 +91,7 @@ public class MessageDispatcher {
 
 	public void Clear() {
 		if (_invokePool.Count > 0) {
-			Debug.Fail("MessageDispatcher.Clear: Cannot perform this operation while processing the message.");
+			Debug.Fail("[Error] MessageDispatcher.Clear: Cannot perform this operation while processing the message.");
 			return;
 		}
 		_listenerDict.Clear();
@@ -106,7 +106,7 @@ public class MessageDispatcher {
 	private void _AddListener(int messageId, int senderKey, IMessageListener listener) {
 		if (_listenerDict.TryGetValue(messageId, out var dict)) {
 			if (dict.ContainsKey(senderKey)) {
-				Debug.Fail("MessageDispatcher.AddListener: The sender is exist!");
+				Debug.Fail("[Error] MessageDispatcher.AddListener: The sender is exist!");
 				return;
 			}
 		} else {
