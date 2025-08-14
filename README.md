@@ -1,44 +1,37 @@
-# MessageCenter-CSharp
+# Message
 
 ## 使用方法
 
 ```C#
+// 引用命名空间
+using Message;
+
+// 实例化一个派发器
+var dispatcher = new Dispatcher();
+
 // 定义消息
-class YourMessage : MessageBase<YourMessage>
-{
-	// 一些参数
-    public string param;
-	// ...
-};
-```
+struct Custom {
+	int value;
+}
 
-```C#
-// 创建消息
-var msg = new YourMessage();
-msg.param = "some";
-```
-
-```C#
-// 发送立即生效
-MessageCenter.Send(msg);
-```
-
-```C#
 // 添加监听
-MessageCenter.AddListener<YourMessage>(this, (YourMessage msg) => {
-	// 使用参数
-	msg.param;
+dispatcher.AddListener<Custom>(this, msg => {
+    Console.WriteLine(msg.value);
 });
 // 删除监听
-MessageCenter.RemoveListener<YourMessage>(this);
+dispatcher.RemoveListener<Custom>(this);
+
+// 发送消息
+dispatcher.Send(new Custom {
+    value = 1000
+});
 ```
 
 ```C#
-// 使用自定义的消息派发器
-// 方法和MessageCenter相同
-var dispather = new MessageDispatcher();
-dispather.AddListener<YourMessage>(....);
-dispather.Send(....);
-dispather.RemoveListener<YourMessage>(....);
-// ......
+// 支持任意结构的消息
+int int_msg = 10;
+dispatcher.Send(int_msg);
+
+string str_msg = "hello";
+dispatcher.Send(str_msg);
 ```
