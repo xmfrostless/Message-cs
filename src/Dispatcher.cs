@@ -42,34 +42,23 @@ public class Dispatcher {
             MESSAGE_WARNING(Hash<T>.TYPE.Name, "The binder is null!");
             return;
         }
-        var messageCode = Hash<T>.TYPE_ID;
-        if (!_listenerMap.TryGetValue(messageCode, out var listeners)) {
-            MESSAGE_WARNING(Hash<T>.TYPE.Name, "The listener list is empty!");
+        if (!_RemoveListener(Hash<T>.TYPE_ID, binder)) {
+            MESSAGE_WARNING(Hash<T>.TYPE.Name, "The binder not found!");
+        }
+    }
+
+    public void RemoveAllListeners(object binder) {
+        if (binder == null) {
+            MESSAGE_WARNING("The binder is null!", "");
             return;
         }
-        if (_invokeLevel == 0) {
-            var index = listeners.FindIndex(value => value.binder.Equals(binder));
-            if (index != -1) {
-                listeners.RemoveAt(index);
-                return;
-            }
-        } else {
-            for (var i = 0; i < listeners.Count; ++i) {
-                if (listeners[i].binder.Equals(binder)) {
-                    if (_removeIndexes.TryGetValue(messageCode, out var removeIndexes)) {
-                        if (removeIndexes.Add(i)) {
-                            _shouldRemove = true;
-                            return;
-                        }
-                    } else {
-                        _removeIndexes.Add(messageCode, [i]);
-                        _shouldRemove = true;
-                        return;
-                    }
-                }
-            }
+        bool success = false;
+        foreach (var item in _listenerMap) {
+            success |= _RemoveListener(item.Key, binder);
         }
-        MESSAGE_WARNING(Hash<T>.TYPE.Name, "The binder not found!");
+        if (!success) {
+            MESSAGE_WARNING("The binder not found!", "");
+        }
     }
 
     public void Send<T>(T message) {
@@ -95,24 +84,53 @@ public class Dispatcher {
         MESSAGE_INVOKE_POP();
 
         if (_invokeLevel == 0 && _shouldRemove) {
-            foreach (var item in _removeIndexes) {
-                if (item.Value.Count == 0) {
+            foreach (var (rmCode, rmIndexes) in _removeIndexes) {
+                if (rmIndexes.Count == 0) {
                     continue;
                 }
-                if (_listenerMap.TryGetValue(item.Key, out var tempList)) {
+                if (_listenerMap.TryGetValue(rmCode, out var tempList)) {
                     if (tempList.Count != 0) {
                         var tail = tempList.Count;
-                        foreach (var index in item.Value) {
+                        foreach (var index in rmIndexes) {
                             --tail;
                             (tempList[index], tempList[tail]) = (tempList[tail], tempList[index]);
                         }
                         tempList.RemoveRange(tail, tempList.Count - tail);
                     }
                 }
-                item.Value.Clear();
+                rmIndexes.Clear();
             }
             _shouldRemove = false;
         }
+    }
+
+    private bool _RemoveListener(Guid messageCode, object binder) {
+        if (!_listenerMap.TryGetValue(messageCode, out var listeners)) {
+            return false;
+        }
+        if (_invokeLevel == 0) {
+            var index = listeners.FindIndex(value => value.binder.Equals(binder));
+            if (index != -1) {
+                listeners.RemoveAt(index);
+                return true;
+            }
+        } else {
+            for (var i = 0; i < listeners.Count; ++i) {
+                if (listeners[i].binder.Equals(binder)) {
+                    if (_removeIndexes.TryGetValue(messageCode, out var removeIndexes)) {
+                        if (removeIndexes.Add(i)) {
+                            _shouldRemove = true;
+                            return true;
+                        }
+                    } else {
+                        _removeIndexes.Add(messageCode, [i]);
+                        _shouldRemove = true;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static class Hash<T> {
