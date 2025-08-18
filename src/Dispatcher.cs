@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Message;
 
@@ -154,48 +155,71 @@ public class Dispatcher {
     private int _invokeLevel = 0;
     private bool _shouldRemove = false;
 
+
 #if DEBUG
+    private Action<string> _warnOutputFunc = null;
+    private Action<string> _errorOutputFunc = null;
     private Stack<Type> _invokeStack = [];
-    private void MESSAGE_WARNING(string info, string detail, [CallerMemberName] string funcName = "") {
-        Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.Error.WriteLine($"[Message] Warn: {funcName} / {info} / {detail}");
-        Console.ResetColor();
+
+    [Conditional("DEBUG")]
+    public void LocateOutputFunction(
+        Action<string> warnOutputFunc,
+        Action<string> errorOutputFunc
+    ) {
+        _warnOutputFunc = warnOutputFunc;
+        _errorOutputFunc = errorOutputFunc;
     }
-    private void MESSAGE_ERROR(string info, string detail, [CallerMemberName] string funcName = "") {
-        Console.ForegroundColor = ConsoleColor.Magenta;
-        Console.Error.WriteLine($"[Message] Error: {funcName} / {info} / {detail}");
-        Console.ResetColor();
-    }
-    private void MESSAGE_ASSERT(string info, string detail, [CallerMemberName] string funcName = "") {
-        MESSAGE_ERROR(info, detail, funcName);
-        Debug.Assert(false);
-    }
+
+    [Conditional("DEBUG")]
     private void MESSAGE_INVOKE_PUSH(Type cur, [CallerMemberName] string funcName = "") {
         if (_invokeStack.Count > 200) {
-            MESSAGE_ERROR(cur.Name, "The number of message recursion exceeds the upper limit");
-            Console.ForegroundColor = ConsoleColor.Magenta;
+            var stringBuilder = new StringBuilder();
             foreach (var item in _invokeStack) {
-                Console.Error.Write($"{item.Name} -> ");
+                stringBuilder.Append($"{item.Name} -> ");
             }
-            Console.Error.WriteLine($"(*){cur.Name}");
-            Console.ResetColor();
+            stringBuilder.Append($"(*){cur.Name}");
+            MESSAGE_ERROR("The number of message recursion exceeds the upper limit", stringBuilder.ToString());
             Debug.Assert(false);
         }
         _invokeStack.Push(cur);
     }
+    [Conditional("DEBUG")]
     private void MESSAGE_INVOKE_POP() {
         _invokeStack.Pop();
     }
+
+    [Conditional("DEBUG")]
+    private void MESSAGE_WARNING(string info, string detail, [CallerMemberName] string funcName = "") {
+        if (_warnOutputFunc == null) {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Error.WriteLine($"[Message] Warn: {funcName} / {info} / {detail}");
+            Console.Error.WriteLine(Environment.StackTrace);
+            Console.ResetColor();
+        } else {
+            _warnOutputFunc.Invoke($"[Message] Warn: {funcName} / {info} / {detail}\n{Environment.StackTrace}");
+        }
+    }
+    [Conditional("DEBUG")]
+    private void MESSAGE_ERROR(string info, string detail, [CallerMemberName] string funcName = "") {
+        if (_errorOutputFunc == null) {
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.Error.WriteLine($"[Message] Error: {funcName} / {info} / {detail}");
+            Console.Error.WriteLine(Environment.StackTrace);
+            Console.ResetColor();
+        } else {
+            _errorOutputFunc.Invoke($"[Message] Error: {funcName} / {info} / {detail}\n{Environment.StackTrace}");
+        }
+    }
 #else
-	[Conditional("DEBUG")]
-	private void MESSAGE_WARNING(string info, string detail, [CallerMemberName] string funcName = "") { }
-	[Conditional("DEBUG")]
-	private void MESSAGE_ERROR(string info, string detail, [CallerMemberName] string funcName = "") { }
-	[Conditional("DEBUG")]
-	private void MESSAGE_ASSERT(string info, string detail, [CallerMemberName] string funcName = "") { }
-	[Conditional("DEBUG")]
-	private void MESSAGE_INVOKE_PUSH(Type cur, [CallerMemberName] string funcName = "") { }
-	[Conditional("DEBUG")]
-	private void MESSAGE_INVOKE_POP() { }
+    [Conditional("DEBUG")]
+    public void LocateOutputFunction(Action<string> warnOutputFunc,Action<string> errorOutputFunc) {}
+    [Conditional("DEBUG")]
+    private void MESSAGE_INVOKE_PUSH(Type cur, [CallerMemberName] string funcName = "") { }
+    [Conditional("DEBUG")]
+    private void MESSAGE_INVOKE_POP() { }
+    [Conditional("DEBUG")]
+    private void MESSAGE_WARNING(string info, string detail, [CallerMemberName] string funcName = "") {}
+    [Conditional("DEBUG")]
+    private void MESSAGE_ERROR(string info, string detail, [CallerMemberName] string funcName = "") {}
 #endif
 }
