@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Message;
@@ -158,28 +157,23 @@ public class Dispatcher {
 
 #if DEBUG
     private Action<string> _warnOutputFunc = null;
-    private Action<string> _errorOutputFunc = null;
     private Stack<Type> _invokeStack = [];
+    private static readonly int RECURSIVE_WARN_COUNT = 200;
 
     [Conditional("DEBUG")]
-    public void LocateOutputFunction(
-        Action<string> warnOutputFunc,
-        Action<string> errorOutputFunc
-    ) {
+    public void LocateOutputFunction(Action<string> warnOutputFunc) {
         _warnOutputFunc = warnOutputFunc;
-        _errorOutputFunc = errorOutputFunc;
     }
 
     [Conditional("DEBUG")]
-    private void MESSAGE_INVOKE_PUSH(Type cur, [CallerMemberName] string funcName = "") {
-        if (_invokeStack.Count > 200) {
+    private void MESSAGE_INVOKE_PUSH(Type cur) {
+        if (_invokeStack.Count > RECURSIVE_WARN_COUNT) {
             var stringBuilder = new StringBuilder();
             foreach (var item in _invokeStack) {
                 stringBuilder.Append($"{item.Name} -> ");
             }
             stringBuilder.Append($"(*){cur.Name}");
-            MESSAGE_ERROR("The number of message recursion exceeds the upper limit", stringBuilder.ToString());
-            Debug.Assert(false);
+            MESSAGE_WARNING($"The recursive number of messages exceeds {RECURSIVE_WARN_COUNT}", stringBuilder.ToString());
         }
         _invokeStack.Push(cur);
     }
@@ -189,37 +183,30 @@ public class Dispatcher {
     }
 
     [Conditional("DEBUG")]
-    private void MESSAGE_WARNING(string info, string detail, [CallerMemberName] string funcName = "") {
+    private void MESSAGE_WARNING(params object[] what) {
+        Console.ForegroundColor = ConsoleColor.Yellow;
         if (_warnOutputFunc == null) {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Error.WriteLine($"[Message] Warn: {funcName} / {info} / {detail}");
-            Console.Error.WriteLine(Environment.StackTrace);
-            Console.ResetColor();
+            Console.Error.WriteLine("\n" + string.Join(" ", what));
+            var stackTrace = new StackTrace();
+            for (var i = 0; i < stackTrace.FrameCount; ++i) {
+                var method = stackTrace.GetFrame(i)?.GetMethod();
+                if (method != null) {
+                    Console.Error.WriteLine($"- {method.DeclaringType.Name}::{method.Name}");
+                }
+            }
         } else {
-            _warnOutputFunc.Invoke($"[Message] Warn: {funcName} / {info} / {detail}\n{Environment.StackTrace}");
+            _warnOutputFunc.Invoke(string.Join(" ", what));
         }
-    }
-    [Conditional("DEBUG")]
-    private void MESSAGE_ERROR(string info, string detail, [CallerMemberName] string funcName = "") {
-        if (_errorOutputFunc == null) {
-            Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.Error.WriteLine($"[Message] Error: {funcName} / {info} / {detail}");
-            Console.Error.WriteLine(Environment.StackTrace);
-            Console.ResetColor();
-        } else {
-            _errorOutputFunc.Invoke($"[Message] Error: {funcName} / {info} / {detail}\n{Environment.StackTrace}");
-        }
+        Console.ResetColor();
     }
 #else
     [Conditional("DEBUG")]
-    public void LocateOutputFunction(Action<string> warnOutputFunc,Action<string> errorOutputFunc) {}
+    public void LocateOutputFunction(Action<string> warnOutputFunc) {}
     [Conditional("DEBUG")]
-    private void MESSAGE_INVOKE_PUSH(Type cur, [CallerMemberName] string funcName = "") { }
+    private void MESSAGE_INVOKE_PUSH(Type cur) { }
     [Conditional("DEBUG")]
     private void MESSAGE_INVOKE_POP() { }
     [Conditional("DEBUG")]
-    private void MESSAGE_WARNING(string info, string detail, [CallerMemberName] string funcName = "") {}
-    [Conditional("DEBUG")]
-    private void MESSAGE_ERROR(string info, string detail, [CallerMemberName] string funcName = "") {}
+    private void MESSAGE_WARNING(params object[] what) {}
 #endif
 }
