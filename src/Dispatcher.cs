@@ -187,6 +187,7 @@ public class Dispatcher {
         Console.ForegroundColor = ConsoleColor.Yellow;
         if (_warnOutputFunc == null) {
             Console.Error.WriteLine("\n" + string.Join(" ", what));
+            Console.Error.WriteLine($"- {DateTime.Now:HH:mm:ss.fff}");
             var stackTrace = new StackTrace();
             for (var i = 1; i < stackTrace.FrameCount; ++i) {
                 var method = stackTrace.GetFrame(i)?.GetMethod();
