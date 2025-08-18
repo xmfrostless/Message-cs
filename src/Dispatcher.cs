@@ -188,7 +188,7 @@ public class Dispatcher {
         if (_warnOutputFunc == null) {
             Console.Error.WriteLine("\n" + string.Join(" ", what));
             var stackTrace = new StackTrace();
-            for (var i = 0; i < stackTrace.FrameCount; ++i) {
+            for (var i = 1; i < stackTrace.FrameCount; ++i) {
                 var method = stackTrace.GetFrame(i)?.GetMethod();
                 if (method != null) {
                     Console.Error.WriteLine($"- {method.DeclaringType.Name}::{method.Name}");
