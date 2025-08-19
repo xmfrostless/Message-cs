@@ -6,10 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-#if DEBUG
-using System.Text;
-#endif
-
 namespace Message;
 
 public class Dispatcher {
@@ -171,7 +167,7 @@ public class Dispatcher {
     [Conditional("DEBUG")]
     private void MESSAGE_INVOKE_PUSH(Type cur) {
         if (_invokeStack.Count > RECURSIVE_WARN_COUNT) {
-            var stringBuilder = new StringBuilder();
+            var stringBuilder = new System.Text.StringBuilder();
             foreach (var item in _invokeStack) {
                 stringBuilder.Append($"{item.Name} -> ");
             }
