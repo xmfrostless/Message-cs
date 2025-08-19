@@ -5,7 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
+#if DEBUG
 using System.Text;
+#endif
 
 namespace Message;
 
@@ -174,6 +177,7 @@ public class Dispatcher {
             }
             stringBuilder.Append($"(*){cur.Name}");
             MESSAGE_WARNING($"The recursive number of messages exceeds {RECURSIVE_WARN_COUNT}", stringBuilder.ToString());
+            Debug.Assert(false);
         }
         _invokeStack.Push(cur);
     }
