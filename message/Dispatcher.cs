@@ -1,5 +1,5 @@
 /*
-    https://github.com/xmfrostless/Message-CSharp
+    https://github.com/xmfrostless/Message-cs
 */
 
 using System;
@@ -199,6 +199,7 @@ public class Dispatcher {
                     Console.Error.WriteLine($"- {method.DeclaringType.Name}::{method.Name}");
                 }
             }
+            Console.WriteLine();
         } else {
             _warnOutputFunc.Invoke(string.Join(" ", what));
         }

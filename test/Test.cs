@@ -1,4 +1,8 @@
 
+/*
+    https://github.com/xmfrostless/Message-cs
+*/
+
 using System;
 using System.Reflection;
 
