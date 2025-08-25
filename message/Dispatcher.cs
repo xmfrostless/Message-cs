@@ -88,8 +88,8 @@ public class Dispatcher {
                     continue;
                 }
                 if (_listenerMap.TryGetValue(rmCode, out var tempList)) {
-                    if (tempList.Count != 0) {
-                        var tail = tempList.Count;
+                    var tail = tempList.Count;
+                    if (tail != 0) {
                         foreach (var index in rmIndexes) {
                             --tail;
                             (tempList[index], tempList[tail]) = (tempList[tail], tempList[index]);
@@ -122,7 +122,7 @@ public class Dispatcher {
                             return true;
                         }
                     } else {
-                        _removeIndexes.Add(messageCode, [i]);
+                        _removeIndexes.Add(messageCode, new(Comparer<int>.Create((x, y) => y.CompareTo(x))) { i });
                         _shouldRemove = true;
                         return true;
                     }
@@ -149,7 +149,7 @@ public class Dispatcher {
     }
 
     private Dictionary<Guid, List<ListenerBase>> _listenerMap = [];
-    private Dictionary<Guid, HashSet<int>> _removeIndexes = [];
+    private Dictionary<Guid, SortedSet<int>> _removeIndexes = [];
     private int _invokeLevel = 0;
     private bool _shouldRemove = false;
 

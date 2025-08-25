@@ -128,6 +128,33 @@ public class Test {
     void Test5() {
         Console.WriteLine($"\n------ {MethodBase.GetCurrentMethod().Name} ------");
         Message.Dispatcher dispatcher = new Message.Dispatcher();
+
+        string a = "a";
+        string b = "b";
+        string c = "c";
+        string d = "d";
+
+        dispatcher.AddListener<int>(a, msg => {
+            Console.WriteLine($"{a}:{msg}");
+        });
+        dispatcher.AddListener<int>(b, msg => {
+            Console.WriteLine($"{b}:{msg}");
+        });
+        dispatcher.AddListener<int>(c, msg => {
+            Console.WriteLine($"{c}:{msg}");
+        });
+        dispatcher.AddListener<int>(d, msg => {
+            dispatcher.RemoveListener<int>(b);
+            dispatcher.RemoveListener<int>(d);
+            Console.WriteLine($"{d}:{msg}");
+        });
+        dispatcher.Send(1);
+        dispatcher.Send(2);
+    }
+
+    void Test6() {
+        Console.WriteLine($"\n------ {MethodBase.GetCurrentMethod().Name} ------");
+        Message.Dispatcher dispatcher = new Message.Dispatcher();
         dispatcher.AddListener<int>(this, msg => {
             Console.Write($"{msg.GetType().Name}: {msg}; ");
             dispatcher.Send((float)msg + 1);
@@ -149,6 +176,7 @@ public class Test {
         Test3();
         Test4();
         Test5();
+        // Test6();
     }
 
     public static void Main(string[] args) {
